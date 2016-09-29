@@ -71,18 +71,6 @@ const commitTransaction = function (transactionPathname) {
   return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
 }
 
-// No transaction
-const constructQuery = function (opt) {
-  const query = opt.query
-  const path = opt.path
-  return doRequest({
-    path: path,
-    'contentType': 'application/x-www-form-urlencoded',
-    'query': query,
-    verb: 'POST'
-  })
-}
-
 // http://rdf4j.org/doc/the-rdf4j-server-rest-api/#The_UPDATE_operation
 const updateOperation = function (opt) {
   const query = opt.query
