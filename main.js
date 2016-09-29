@@ -2,15 +2,6 @@ const http = require('http')
 const querystring = require('querystring')
 const url = require('url')
 
-var constructQ = querystring.stringify({
-  'query': 'CONSTRUCT {?t ?s ?r .} WHERE {?t ?s ?r .}'
-})
-
-var getStatementWithSubject = querystring.stringify({
-  'action': 'GET',
-  'subj': '<http://exampleSub>'
-})
-
 var doRequest = function (opt) {
   return new Promise(function (resolve, reject) {
     const query = opt.query || ''
@@ -54,6 +45,7 @@ var doRequest = function (opt) {
   })
 }
 
+// http://rdf4j.org/doc/the-rdf4j-server-rest-api/#Starting_transactions
 const openTransaction = function () {
   return new Promise(function (resolve, reject) {
     doRequest({
@@ -74,10 +66,12 @@ const openTransaction = function () {
   })
 }
 
+// http://rdf4j.org/doc/the-rdf4j-server-rest-api/#The_COMMIT_operation
 const commitTransaction = function (transactionPathname) {
   return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
 }
 
+// No transaction
 const constructQuery = function (opt) {
   const query = opt.query
   const path = opt.path
@@ -89,7 +83,8 @@ const constructQuery = function (opt) {
   })
 }
 
-const updateQuery = function (opt) {
+// http://rdf4j.org/doc/the-rdf4j-server-rest-api/#The_UPDATE_operation
+const updateOperation = function (opt) {
   const query = opt.query
   const transactionPathname = opt.transactionPathname
   var updateQueryString = querystring.stringify({
@@ -102,25 +97,37 @@ const updateQuery = function (opt) {
   })
 }
 
-// Read request
-constructQuery({
-  path: '/rdf4j-server/repositories/tsrn',
-  'query': constructQ
-})
-  .then(function (res) {
-    console.log(res)
-
-    // open a transaction
-    return openTransaction()
+// http://rdf4j.org/doc/the-rdf4j-server-rest-api/#The_QUERY_operation
+const queryOperation = function (opt) {
+  const query = opt.query
+  const transactionPathname = opt.transactionPathname
+  var queryQueryString = querystring.stringify({
+    'action': 'QUERY',
+    'query': query
   })
+  return doRequest({
+    path: transactionPathname + '?' + queryQueryString,
+    verb: 'PUT'
+  })
+}
+
+// TEST:
+openTransaction()
   .then(function (transactionPathname) {
     // TRANSACTION beginned
 
-    // 'INSERT DATA { <http://exampleSub> <http://examplePred> <http://exampleObj> .}'
-    updateQuery({
+    queryOperation({
       transactionPathname: transactionPathname,
-      query: 'INSERT DATA { <http://exampleSubbb> <http://examplePred> <http://exampleObj> .}'
+      query: 'CONSTRUCT {?t ?s ?r .} WHERE { ?t ?s ?r .}'
     })
+      .then(function (res) {
+        console.log(res)
+        // 'INSERT DATA { <http://exampleSub> <http://examplePred> <http://exampleObj> .}'
+        return updateOperation({
+          transactionPathname: transactionPathname,
+          query: 'INSERT DATA { <http://exampleSubbb> <http://examplePred> <http://exampleObj> .}'
+        })
+      })
       .then(function (res) {
         console.log(res.status)
         return commitTransaction(transactionPathname)
