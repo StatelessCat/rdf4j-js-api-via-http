@@ -83,18 +83,21 @@ const commitTransaction = function (transactionPathname) {
   return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
 }
 
-const constructQuery = function (query) {
-  return new Promise(function (resolve, reject) {
-    
+const constructQuery = function (opt) {
+  const query = opt.query
+  const path = opt.path
+  return doRequest({
+    path: path,
+    'contentType': 'application/x-www-form-urlencoded',
+    'query': query,
+    verb: 'POST'
   })
 }
 
 // Read request
-doRequest({
+constructQuery({
   path: '/rdf4j-server/repositories/tsrn',
-  'contentType': 'application/x-www-form-urlencoded',
-  'query': constructQ,
-  verb: 'POST'
+  'query': constructQ
 })
   .then(function (res) {
     console.log(res)
