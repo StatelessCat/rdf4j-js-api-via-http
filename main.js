@@ -6,8 +6,8 @@ var constructQ = querystring.stringify({
   'query': 'CONSTRUCT {?t ?s ?r .} WHERE {?t ?s ?r .}'
 })
 
-// TODO not application/x-www-form-urlencode ??
 var insertDataQ = querystring.stringify({
+  'action': 'UPDATE',
   'update': 'INSERT DATA { <http://exampleSub> <http://examplePred> <http://exampleObj> .}'
 })
 
@@ -59,6 +59,32 @@ var doRequest = function (opt) {
   })
 }
 
+const openTransaction = function () {
+  return new Promise(function (resolve, reject) {
+    doRequest({
+      path: '/rdf4j-server/repositories/tsrn/transactions',
+      verb: 'POST'
+    })
+      .then(function (res) {
+        // Location response headers contains the URI of the transaction
+        const transactionUri = res.headers.location
+        const transactionUriObject = url.parse(transactionUri)
+        const transactionPathname = transactionUriObject.pathname
+        console.log('OPENED transaction: ' + transactionPathname)
+        resolve(transactionPathname)
+      })
+      .catch(function (err) {
+        reject(err)
+      })
+  })
+}
+
+const commitTransaction = function (transactionPathname) {
+  return new Promise(function (resolve, reject) {
+    return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
+  })
+}
+
 // Read request
 doRequest({
   path: '/rdf4j-server/repositories/tsrn',
@@ -70,37 +96,21 @@ doRequest({
     console.log(res)
 
     // open a transaction
-    return doRequest({
-      path: '/rdf4j-server/repositories/tsrn/transactions',
-      'contentType': 'application/x-www-form-urlencoded',
-      verb: 'POST'
-    })
+    return openTransaction()
   })
-  .then(function (res) {
-    // Location response headers contains the URI of the transaction
-    const transactionUri = res.headers.location
-    const transactionUriObject = url.parse(transactionUri)
-    const transactionPathname = transactionUriObject.pathname
-
-    console.log('OPENED transaction: ' + transactionPathname)
+  .then(function (transactionPathname) {
+    // 'INSERT DATA { <http://exampleSub> <http://examplePred> <http://exampleObj> .}'
     doRequest({
-      path: transactionPathname + '?' + getStatementWithSubject,
+      path: transactionPathname + '?' + insertDataQ,
       verb: 'PUT'
     })
       .then(function (res) {
-        console.log('###')
-        console.log(res)
-        console.log('###')
-        return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
+        console.log(res.status)
+        return commitTransaction(transactionPathname)
       })
       .then(function (res) {
+        // transaction committed
         console.log(res.status === 200)
-        return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
-      })
-      .then(function (res) {
-        // Must be 500 error because transaction already commited
-        console.log(res.status === 500)
-        
       })
       .catch(function (err) {
         console.log(err)
