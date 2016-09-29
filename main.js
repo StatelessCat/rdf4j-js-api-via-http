@@ -80,8 +80,12 @@ const openTransaction = function () {
 }
 
 const commitTransaction = function (transactionPathname) {
+  return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
+}
+
+const constructQuery = function (query) {
   return new Promise(function (resolve, reject) {
-    return doRequest({path: transactionPathname + '?action=COMMIT', 'query': null, verb: 'PUT'})
+    
   })
 }
 
