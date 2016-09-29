@@ -6,11 +6,6 @@ var constructQ = querystring.stringify({
   'query': 'CONSTRUCT {?t ?s ?r .} WHERE {?t ?s ?r .}'
 })
 
-var insertDataQ = querystring.stringify({
-  'action': 'UPDATE',
-  'update': 'INSERT DATA { <http://exampleSub> <http://examplePred> <http://exampleObj> .}'
-})
-
 var getStatementWithSubject = querystring.stringify({
   'action': 'GET',
   'subj': '<http://exampleSub>'
@@ -94,6 +89,15 @@ const constructQuery = function (opt) {
   })
 }
 
+const updateQuery = function (opt) {
+  const query = opt.query
+  const transactionPathname = opt.transactionPathname
+  return doRequest({
+    path: transactionPathname + '?' + query,
+    verb: 'PUT'
+  })
+}
+
 // Read request
 constructQuery({
   path: '/rdf4j-server/repositories/tsrn',
@@ -106,17 +110,23 @@ constructQuery({
     return openTransaction()
   })
   .then(function (transactionPathname) {
+    // TRANSACTION beginned
+
     // 'INSERT DATA { <http://exampleSub> <http://examplePred> <http://exampleObj> .}'
-    doRequest({
-      path: transactionPathname + '?' + insertDataQ,
-      verb: 'PUT'
+    var insertDataQ = querystring.stringify({
+      'action': 'UPDATE',
+      'update': 'INSERT DATA { <http://exampleSubs> <http://examplePred> <http://exampleObj> .}'
+    })
+    updateQuery({
+      transactionPathname: transactionPathname,
+      query: insertDataQ
     })
       .then(function (res) {
         console.log(res.status)
         return commitTransaction(transactionPathname)
       })
       .then(function (res) {
-        // transaction committed
+        // TRANSACTION committed
         console.log(res.status === 200)
       })
       .catch(function (err) {
