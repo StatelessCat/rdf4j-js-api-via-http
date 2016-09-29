@@ -92,8 +92,12 @@ const constructQuery = function (opt) {
 const updateQuery = function (opt) {
   const query = opt.query
   const transactionPathname = opt.transactionPathname
+  var updateQueryString = querystring.stringify({
+    'action': 'UPDATE',
+    'update': query
+  })
   return doRequest({
-    path: transactionPathname + '?' + query,
+    path: transactionPathname + '?' + updateQueryString,
     verb: 'PUT'
   })
 }
@@ -113,13 +117,9 @@ constructQuery({
     // TRANSACTION beginned
 
     // 'INSERT DATA { <http://exampleSub> <http://examplePred> <http://exampleObj> .}'
-    var insertDataQ = querystring.stringify({
-      'action': 'UPDATE',
-      'update': 'INSERT DATA { <http://exampleSubs> <http://examplePred> <http://exampleObj> .}'
-    })
     updateQuery({
       transactionPathname: transactionPathname,
-      query: insertDataQ
+      query: 'INSERT DATA { <http://exampleSubbb> <http://examplePred> <http://exampleObj> .}'
     })
       .then(function (res) {
         console.log(res.status)
